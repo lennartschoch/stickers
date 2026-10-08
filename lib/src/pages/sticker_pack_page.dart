@@ -162,10 +162,8 @@ class StickerPackPageState extends State<StickerPackPage> {
                   Row(
                     children: [
                       ElevatedButton.icon(
-                        icon: Icon(Icons.share),
-                        onPressed: () {
-                          exportPack(widget.pack);
-                        },
+                        icon: const Icon(Icons.share),
+                        onPressed: () => _showExportOptions(context),
                         label: Text(AppLocalizations.of(context)!.export),
                       ),
                       SizedBox(
@@ -187,6 +185,35 @@ class StickerPackPageState extends State<StickerPackPage> {
             ),
           )
         ],
+      ),
+    );
+  }
+
+  void _showExportOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.folder_zip_outlined),
+              title: Text(AppLocalizations.of(sheetContext)!.exportOwnFormat),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                exportPack(widget.pack);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline),
+              title: Text(AppLocalizations.of(sheetContext)!.exportForSignal),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                exportForSignalWithErrorHandling(widget.pack);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

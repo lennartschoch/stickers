@@ -5,8 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:image_editor/image_editor.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stickers/generated/intl/app_localizations.dart';
+import 'package:stickers/src/data/load_store.dart';
+import 'package:stickers/src/data/signal.dart';
 import 'package:stickers/src/data/sticker_pack.dart';
 import 'package:stickers/src/dialogs/error_dialog.dart';
+import 'package:stickers/src/dialogs/signal_info_dialog.dart';
 import 'package:stickers/src/globals.dart';
 import 'package:whatsapp_stickers_plus/exceptions.dart';
 
@@ -62,6 +65,46 @@ Future<void> sendToWhatsappWithErrorHandling(StickerPack pack, BuildContext cont
         context: navigatorKey.currentContext!,
         builder: (_) => ErrorDialog(title: AppLocalizations.of(context)!.couldnTAddStickerPack, message: e.toString()));
   }
+}
+
+String signalIssueMessage(SignalIssue issue, BuildContext context) {
+  switch (issue) {
+    case SignalIssue.empty:
+      return AppLocalizations.of(context)!.signalIssueEmpty;
+    case SignalIssue.tooMany:
+      return AppLocalizations.of(context)!.signalIssueTooMany;
+    case SignalIssue.animated:
+      return AppLocalizations.of(context)!.signalIssueAnimated;
+    case SignalIssue.oversized:
+      return AppLocalizations.of(context)!.signalIssueOversized;
+  }
+}
+
+/// Exports [pack] in Signal's format, shares the file and explains what to do with it.
+/// Signal offers no "add to Signal" intent, so unlike [sendToWhatsappWithErrorHandling] this only
+/// hands the user a file they still have to upload themselves.
+Future<void> exportForSignalWithErrorHandling(StickerPack pack) async {
+  try {
+    await exportPackAsSignal(pack);
+    _showOverNavigator((context) => const SignalInfoDialog());
+  } on SignalExportException catch (e) {
+    _showOverNavigator((context) => ErrorDialog(
+          title: AppLocalizations.of(context)!.error,
+          message: e.issues.map((issue) => signalIssueMessage(issue, context)).join("\n"),
+        ));
+  } on Exception catch (e) {
+    _showOverNavigator(
+      (context) => ErrorDialog(title: AppLocalizations.of(context)!.error, message: e.toString()),
+    );
+  }
+}
+
+/// Shows [builder] over whatever page is on screen right now, the export we just waited for may
+/// well have outlived the widget that started it.
+void _showOverNavigator(Widget Function(BuildContext context) builder) {
+  final navigatorContext = navigatorKey.currentContext;
+  if (navigatorContext?.mounted != true) return;
+  showDialog(context: navigatorContext!, builder: builder);
 }
 
 int colCount(double width) {

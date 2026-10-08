@@ -16,6 +16,7 @@ Or download from the latest [GitHub Release](https://github.com/lolocomotive/sti
     - Every element has its own layer unde the hood, so you can draw above and below texts
 - Import/Export
     - Export to `.zip` to share or backup your packs
+    - Export packs for Signal (and import Signal packs again), see [Signal stickers](#signal-stickers)
     - Import from various formats (own `.zip` format, `.wastickers`, `.stickify`, shouldn't be too
       hard to add more because most of them are just a ZIP file with pictures and a simple manifest)
 - Create, edit and delete multiple packs and their metadata (author, title, tray icon and more)
@@ -125,6 +126,22 @@ Some features I plan to work on in the future
 - [ ] Start with an existing sticker
 - [ ] Create animated stickers from gifs
 - [ ] Crop and rotate videos
+
+## Signal stickers
+
+WhatsApp lets other apps install sticker packs, Signal doesn't - it only installs packs hosted on
+its own CDN through an `https://signal.art/addstickers/` link. There is no "Add to Signal" button we
+could press, so instead the app speaks Signal's file format:
+
+- **Export for Signal** (share sheet on a pack) writes Signal's `manifest.json` next to your 512x512
+  stickers and shares the `.zip`. Upload it with a tool such as
+  [`signal-cli uploadStickerPack`](https://github.com/AsamK/signal-cli) to get an install link you
+  (or anybody else) can open in Signal.
+- Packs in that format, including the older community one with a `sticker-pack-id` manifest and one
+  json file per sticker, are recognised by **Import** like any other pack file.
+
+Signal is stricter than WhatsApp: up to 200 stickers, at most 300 KB each, and animated stickers
+have to be animated PNG. Animated (webp) packs are therefore refused on export for now.
 
 ## iOS Support
 

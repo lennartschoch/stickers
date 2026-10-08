@@ -127,5 +127,13 @@
   "trimFailedMsg": "Try another video, and if it still doesn't work, head to GitHub to submit an Issue",
   "fontsManagerDetails": "Add/remove fonts of the app",
   "clearCache": "Clear cache",
-  "thisWillRestart": "This will restart the app"
+  "thisWillRestart": "This will restart the app",
+  "exportForSignal": "Export for Signal",
+  "exportOwnFormat": "Sticker pack (.zip)",
+  "signalExportHint": "Signal doesn't let other apps install sticker packs directly. Share the exported file and upload it with a tool like signal-cli (uploadStickerPack) to get an \"Add to Signal\" link. This app can import the file back.\n\nSignal limits: 512x512, up to 200 stickers, max 300 KB each, animated PNG only for animated packs.",
+  "gotIt": "Got it",
+  "signalIssueEmpty": "Add at least one sticker before exporting for Signal.",
+  "signalIssueTooMany": "Signal packs can contain at most 200 stickers.",
+  "signalIssueAnimated": "Animated packs can't be exported for Signal yet, Signal only supports animated PNG.",
+  "signalIssueOversized": "Signal stickers can't be larger than 300 KB. Crop them smaller or simplify them."
 }
