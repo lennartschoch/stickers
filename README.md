@@ -140,8 +140,12 @@ could press, so instead the app speaks Signal's file format:
 - Packs in that format, including the older community one with a `sticker-pack-id` manifest and one
   json file per sticker, are recognised by **Import** like any other pack file.
 
-Signal is stricter than WhatsApp: up to 200 stickers, at most 300 KB each, and animated stickers
-have to be animated PNG. Animated (webp) packs are therefore refused on export for now.
+Signal is stricter than WhatsApp: up to 200 stickers, at most 300 KB each, square, and animations have
+to be animated PNG. Your animations are webp, so **Export for Signal** converts them, and that is where
+the 300 KB limit starts to hurt: the frame rate is capped at 12 fps and, if the file is still too big,
+the picture shrinks before frames are dropped - a sticker that moves at 300 pixels beats a sharp one
+that doesn't. Flat, few-coloured animations survive this well, photographic ones turn into a slideshow.
+Playback speed always survives: a dropped frame gives its duration to the one that stays.
 
 ## iOS Support
 

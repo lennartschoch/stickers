@@ -6,6 +6,7 @@ import 'package:image_editor/image_editor.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stickers/generated/intl/app_localizations.dart';
 import 'package:stickers/src/data/load_store.dart';
+import 'package:stickers/src/data/apng.dart';
 import 'package:stickers/src/data/signal.dart';
 import 'package:stickers/src/data/sticker_pack.dart';
 import 'package:stickers/src/dialogs/error_dialog.dart';
@@ -73,8 +74,6 @@ String signalIssueMessage(SignalIssue issue, BuildContext context) {
       return AppLocalizations.of(context)!.signalIssueEmpty;
     case SignalIssue.tooMany:
       return AppLocalizations.of(context)!.signalIssueTooMany;
-    case SignalIssue.animated:
-      return AppLocalizations.of(context)!.signalIssueAnimated;
     case SignalIssue.oversized:
       return AppLocalizations.of(context)!.signalIssueOversized;
   }
@@ -91,6 +90,11 @@ Future<void> exportForSignalWithErrorHandling(StickerPack pack) async {
     _showOverNavigator((context) => ErrorDialog(
           title: AppLocalizations.of(context)!.error,
           message: e.issues.map((issue) => signalIssueMessage(issue, context)).join("\n"),
+        ));
+  } on AnimatedPngException catch (_) {
+    _showOverNavigator((context) => ErrorDialog(
+          title: AppLocalizations.of(context)!.error,
+          message: AppLocalizations.of(context)!.signalAnimationTooComplex,
         ));
   } on Exception catch (e) {
     _showOverNavigator(

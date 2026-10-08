@@ -127,10 +127,10 @@
     "thisWillRestart": "Die App wird dabei neu gestartet",
     "exportForSignal": "Für Signal exportieren",
     "exportOwnFormat": "Sticker-Pack (.zip)",
-    "signalExportHint": "Signal erlaubt anderen Apps nicht, Sticker-Packs direkt zu installieren. Teilen Sie die exportierte Datei und laden Sie sie mit einem Tool wie signal-cli (uploadStickerPack) hoch, um einen \"Add to Signal\"-Link zu erhalten. Dieses App kann die Datei wieder importieren.\n\nGrenzen von Signal: 512x512, bis zu 200 Sticker, maximal 300 KB pro Sticker, animierte Packs nur als animiertes PNG.",
+  "signalExportHint": "Signal erlaubt anderen Apps nicht, Sticker-Packs direkt zu installieren. Teilen Sie die exportierte Datei und laden Sie sie mit einem Tool wie signal-cli (uploadStickerPack) hoch, um einen \"Add to Signal\"-Link zu erhalten. Dieses App kann die Datei wieder importieren.\n\nGrenzen von Signal: 512x512, bis zu 200 Sticker, maximal 300 KB pro Sticker. Animierte Packs werden von webp in animiertes PNG umgewandelt, was Bilder und Details kostet.",
     "gotIt": "Verstanden",
     "signalIssueEmpty": "Fügen Sie mindestens einen Sticker hinzu, bevor Sie für Signal exportieren.",
     "signalIssueTooMany": "Signal-Packs dürfen höchstens 200 Sticker enthalten.",
-    "signalIssueAnimated": "Animierte Packs können noch nicht für Signal exportiert werden, Signal unterstützt nur animierte PNGs.",
+  "signalAnimationTooComplex": "Diese Animation ist zu lang oder zu detailreich für das Limit von 300 KB pro Sticker bei Signal. Nehmen Sie eine kürzere.",
     "signalIssueOversized": "Signal-Sticker dürfen nicht größer als 300 KB sein. Schneiden Sie sie kleiner oder reduzieren Sie die Details."
 }

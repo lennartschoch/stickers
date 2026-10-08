@@ -254,11 +254,16 @@ void main() {
       expect(result.oversized, [1]);
     });
 
-    test("animated packs and empty packs are rejected", () async {
-      expect((await checkSignalLimits(animated: true, files: await filesOfSizes([1024]))).animated, isTrue);
+    test("empty packs are rejected", () async {
       final empty = await checkSignalLimits(animated: false, files: []);
       expect(empty.empty, isTrue);
       expect(empty.ok, isFalse);
+    });
+
+    test("animated packs skip the size check, their stickers are re-encoded anyway", () async {
+      final result = await checkSignalLimits(animated: true, files: await filesOfSizes([signalMaxStickerBytes * 3]));
+      expect(result.oversized, isEmpty);
+      expect(result.ok, isTrue);
     });
 
     test("packs larger than Signal allows are reported", () async {

@@ -282,14 +282,11 @@ Future<File> writeSignalManifest(Directory dir, SignalPackManifest manifest) asy
 }
 
 /// Reasons a pack can't be handed to Signal.
-enum SignalIssue { empty, tooMany, animated, oversized }
+enum SignalIssue { empty, tooMany, oversized }
 
 /// Result of checking a pack against the limits Signal enforces on upload.
 class SignalCheckResult {
-  SignalCheckResult({required this.animated, required this.oversized, required this.total});
-
-  /// Signal only understands animated APNG, animated webp (what this app produces) is unsupported.
-  final bool animated;
+  SignalCheckResult({required this.oversized, required this.total});
 
   /// Indices of stickers that are larger than [signalMaxStickerBytes].
   final List<int> oversized;
@@ -300,13 +297,12 @@ class SignalCheckResult {
 
   bool get tooMany => total > signalMaxStickers;
 
-  bool get ok => !empty && !tooMany && !animated && oversized.isEmpty;
+  bool get ok => !empty && !tooMany && oversized.isEmpty;
 
   /// All problems found, in the order a user is most likely to care about them.
   List<SignalIssue> get issues => [
         if (empty) SignalIssue.empty,
         if (tooMany) SignalIssue.tooMany,
-        if (animated) SignalIssue.animated,
         if (oversized.isNotEmpty) SignalIssue.oversized,
       ];
 }
@@ -325,6 +321,9 @@ class SignalExportException implements Exception {
 
 /// Checks [files] against [signalMaxStickers] and [signalMaxStickerBytes].
 Future<SignalCheckResult> checkSignalLimits({required bool animated, required List<String> files}) async {
+  // An animated sticker is converted to animated png on the way out and the size of its webp says
+  // nothing about the size of the result, so animated packs are not checked against it.
+  if (animated) return SignalCheckResult(oversized: [], total: files.length);
   final oversized = <int>[];
   for (var i = 0; i < files.length; i++) {
     try {
@@ -333,7 +332,7 @@ Future<SignalCheckResult> checkSignalLimits({required bool animated, required Li
       // A missing file is not a size problem, let the actual export complain about it.
     }
   }
-  return SignalCheckResult(animated: animated, oversized: oversized, total: files.length);
+  return SignalCheckResult(oversized: oversized, total: files.length);
 }
 
 /// Detects an animated webp by looking at the flags of its `VP8X` chunk.

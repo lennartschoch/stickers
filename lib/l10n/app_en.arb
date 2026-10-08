@@ -130,10 +130,10 @@
   "thisWillRestart": "This will restart the app",
   "exportForSignal": "Export for Signal",
   "exportOwnFormat": "Sticker pack (.zip)",
-  "signalExportHint": "Signal doesn't let other apps install sticker packs directly. Share the exported file and upload it with a tool like signal-cli (uploadStickerPack) to get an \"Add to Signal\" link. This app can import the file back.\n\nSignal limits: 512x512, up to 200 stickers, max 300 KB each, animated PNG only for animated packs.",
+  "signalExportHint": "Signal doesn't let other apps install sticker packs directly. Share the exported file and upload it with a tool like signal-cli (uploadStickerPack) to get an \"Add to Signal\" link. This app can import the file back.\n\nSignal limits: 512x512, up to 200 stickers, max 300 KB each. Animated packs are converted from webp to animated PNG, which costs frames and detail.",
   "gotIt": "Got it",
   "signalIssueEmpty": "Add at least one sticker before exporting for Signal.",
   "signalIssueTooMany": "Signal packs can contain at most 200 stickers.",
-  "signalIssueAnimated": "Animated packs can't be exported for Signal yet, Signal only supports animated PNG.",
+  "signalAnimationTooComplex": "This animation is too long or too detailed to fit into Signal's 300 KB per sticker limit. Try a shorter one.",
   "signalIssueOversized": "Signal stickers can't be larger than 300 KB. Crop them smaller or simplify them."
 }

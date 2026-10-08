@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_archive/flutter_archive.dart';
 import 'package:image_editor/image_editor.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stickers/src/constants.dart';
+import 'package:stickers/src/data/apng.dart';
 import 'package:stickers/src/data/signal.dart';
 import 'package:stickers/src/data/sticker.dart';
 import 'package:stickers/src/data/sticker_pack.dart';
@@ -79,10 +82,22 @@ Future<File> exportPackAsSignal(StickerPack pack) async {
 
   final signalPack = SignalPackManifest(title: pack.title, author: pack.author);
   for (var i = 0; i < pack.stickers.length; i++) {
-    final source = File(pack.stickers[i].source);
-    final contentType = sniffImageContentTypeHeaderSync(source) ?? signalMimeWebP;
+    final bytes = await File(pack.stickers[i].source).readAsBytes();
+    final Uint8List data;
+    final String contentType;
+    if (pack.animated && isAnimatedWebP(bytes)) {
+      // Signal plays animated stickers as animated png only, so the webp is transcoded - a second or
+      // so per dozen frames, far too long to do on the UI isolate.
+      final (png, failure) = await Isolate.run(() => _transcodeToAnimatedPng(bytes));
+      if (png == null) throw AnimatedPngException(failure ?? "conversion failed");
+      data = png;
+      contentType = signalMimePng;
+    } else {
+      data = bytes;
+      contentType = sniffImageContentType(bytes) ?? signalMimeWebP;
+    }
     final name = "sticker-$i${_extensionForContentType(contentType)}";
-    await source.copy(_joinPath(packDir.path, name));
+    await File(_joinPath(packDir.path, name)).writeAsBytes(data);
     signalPack.stickers.add(
       SignalSticker(id: i, file: name, emoji: pack.stickers[i].emojis.join(), contentType: contentType),
     );
@@ -97,6 +112,16 @@ Future<File> exportPackAsSignal(StickerPack pack) async {
   debugPrint("Exported for Signal to: ${zipFile.path}");
   SharePlus.instance.share(ShareParams(files: [XFile(zipFile.path)]));
   return zipFile;
+}
+
+/// webp to animated png, returning the reason it didn't work out instead of throwing: exceptions
+/// don't survive an isolate boundary in one piece.
+(Uint8List?, String?) _transcodeToAnimatedPng(Uint8List bytes) {
+  try {
+    return (encodeAnimatedPng(bytes), null);
+  } on AnimatedPngException catch (e) {
+    return (null, e.message);
+  }
 }
 
 /// Turns a parsed Signal pack into one of this app's packs.
