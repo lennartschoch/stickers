@@ -20,8 +20,18 @@ class StickerPack {
   List<Sticker> stickers;
   String? trayIcon;
 
+  /// Install link of this pack once it was uploaded to Signal, `https://signal.art/addstickers/...`.
+  /// Signal has no way of telling us which packs it installed, so the user pastes it once - see the
+  /// Signal install link entry of the export sheet - and the pack can then be opened in Signal from
+  /// here. Parsed and normalized with `parseSignalPackRef`.
+  String? signalLink;
+
   StickerPack(this.title, this.author, this.id, this.stickers, this.imageDataVersion, this.animated,
-      {this.trayIcon, this.publisherWebsite, this.licenseAgreementWebsite, this.privacyPolicyWebsite});
+      {this.trayIcon,
+      this.publisherWebsite,
+      this.licenseAgreementWebsite,
+      this.privacyPolicyWebsite,
+      this.signalLink});
 
   Future<void> sendToWhatsapp() async {
     if (stickers.isEmpty) throw Exception("No stickers!");
@@ -72,6 +82,7 @@ class StickerPack {
       "publisherWebsite": publisherWebsite,
       "privacyPolicyWebsite": privacyPolicyWebsite,
       "licenseAgreementWebsite": licenseAgreementWebsite,
+      "signalLink": signalLink,
     };
   }
 
@@ -87,6 +98,7 @@ class StickerPack {
       publisherWebsite: json["publisherWebsite"],
       privacyPolicyWebsite: json["privacyPolicyWebsite"],
       licenseAgreementWebsite: json["licenseAgreementWebsite"],
+      signalLink: json["signalLink"],
     );
   }
 

@@ -32,6 +32,10 @@ List<int> webpBytes({bool animated = false, List<List<int>> extraChunks = const 
   ];
 }
 
+/// A pack id and its key in the shape Signal uses: 16 and 32 bytes, written as hex.
+final String packId = "a" * 32;
+final String packKey = "b" * 64;
+
 void main() {
   group("content type sniffing", () {
     test("recognises png, webp and jpeg", () {
@@ -270,6 +274,60 @@ void main() {
       final result = await checkSignalLimits(animated: false, files: List.filled(signalMaxStickers + 1, "missing"));
       expect(result.tooMany, isTrue);
       expect(result.ok, isFalse);
+    });
+  });
+
+  group("file names", () {
+    test("sort the way the pack is ordered", () {
+      final names = [for (var i = 0; i < 120; i++) signalStickerFileName(i, ".webp")];
+      expect([...names]..sort(), names);
+      expect(names.first, "sticker-000.webp");
+      expect(names[41], "sticker-041.webp");
+    });
+  });
+
+  group("install links", () {
+    test("reads the link Signal shares", () {
+      final ref = parseSignalPackRef("$signalAddStickersUrl/#pack_id=$packId&pack_key=$packKey");
+      expect(ref?.packId, packId);
+      expect(ref?.packKey, packKey);
+      expect(ref?.installLink, "$signalAddStickersUrl/#pack_id=$packId&pack_key=$packKey");
+    });
+
+    test("reads the action uri the same screen answers to", () {
+      final ref = parseSignalPackRef("sgnl://addstickers?pack_id=$packId&pack_key=$packKey");
+      expect(ref?.installLink, "$signalAddStickersUrl/#pack_id=$packId&pack_key=$packKey");
+    });
+
+    test("normalizes the case of a link copied from somewhere", () {
+      final upper = packId.toUpperCase();
+      final ref = parseSignalPackRef("$signalAddStickersUrl/#pack_id=$upper&pack_key=$packKey");
+      expect(ref?.packId, packId);
+    });
+
+    test("is nothing without both an id and a key", () {
+      expect(parseSignalPackRef(null), isNull);
+      expect(parseSignalPackRef(""), isNull);
+      expect(parseSignalPackRef("https://wa.me/"), isNull);
+      expect(parseSignalPackRef("$signalAddStickersUrl/#pack_id=$packId"), isNull);
+      expect(parseSignalPackRef("$signalAddStickersUrl/#pack_key=$packKey"), isNull);
+      expect(parseSignalPackRef("pack_id=abc&pack_key=def"), isNull);
+    });
+  });
+
+  group("the instructions written into the zip", () {
+    test("name the desktop creator and list the emojis", () {
+      final manifest = SignalPackManifest(title: "Title", author: "Author", stickers: [
+        SignalSticker(id: 0, file: "sticker-000.png", emoji: "\u{1F600}"),
+        SignalSticker(id: 1, file: "sticker-001.webp", emoji: "\u{1F389}"),
+      ]);
+      final text = signalZipReadme(manifest);
+      expect(text, contains("Create/upload sticker pack"));
+      expect(text, contains('"Title" by Author'));
+      expect(text, contains("sticker-000.png  \u{1F600}"));
+      expect(text, contains("1. sticker-000.png"));
+      expect(text, contains("sticker-001.webp  \u{1F389}"));
+      expect(text, contains("$signalMaxStickers stickers"));
     });
   });
 }

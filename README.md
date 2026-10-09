@@ -129,23 +129,32 @@ Some features I plan to work on in the future
 
 ## Signal stickers
 
-WhatsApp lets other apps install sticker packs, Signal doesn't - it only installs packs hosted on
-its own CDN through an `https://signal.art/addstickers/` link. There is no "Add to Signal" button we
-could press, so instead the app speaks Signal's file format:
+WhatsApp lets other apps install sticker packs, Signal doesn't - Android and iOS install nothing but
+packs hosted on its own CDN, reached through an `https://signal.art/addstickers/` link. There is no
+"Add to Signal" button we could press, so the app writes Signal's file format and hands it to the one
+upload tool Signal does have:
 
-- **Export for Signal** (share sheet on a pack) writes Signal's `manifest.json` next to your 512x512
-  stickers and shares the `.zip`. Upload it with a tool such as
-  [`signal-cli uploadStickerPack`](https://github.com/AsamK/signal-cli) to get an install link you
-  (or anybody else) can open in Signal.
-- Packs in that format, including the older community one with a `sticker-pack-id` manifest and one
-  json file per sticker, are recognised by **Import** like any other pack file.
+1. **Export for Signal** (share sheet on a pack) writes your stickers at 512x512 next to a
+   `manifest.json` and a text file with these very steps, and shares the `.zip`.
+2. Unzip it on the computer that runs **Signal Desktop**, which has an uploader built in -
+   *File ▸ Create/upload sticker pack*. Drop the pictures in, give each sticker an emoji, add a title
+   and an author, press **Upload**. It uploads with your account; no command line involved.
+3. Signal gives back an install link. Open it on your phone and the pack is installed - and so it is
+   for anybody you send the link to. Paste it under **Signal install link** and the pack opens in
+   Signal from its page in this app.
+
+The same zip is what [`signal-cli uploadStickerPack`](https://github.com/AsamK/signal-cli) takes, if
+you'd rather upload without the desktop app, and **Import** reads that format back - including the
+older community one with a `sticker-pack-id` manifest and one json file per sticker.
 
 Signal is stricter than WhatsApp: up to 200 stickers, at most 300 KB each, square, and animations have
-to be animated PNG. Your animations are webp, so **Export for Signal** converts them, and that is where
-the 300 KB limit starts to hurt: the frame rate is capped at 12 fps and, if the file is still too big,
-the picture shrinks before frames are dropped - a sticker that moves at 300 pixels beats a sharp one
-that doesn't. Flat, few-coloured animations survive this well, photographic ones turn into a slideshow.
-Playback speed always survives: a dropped frame gives its duration to the one that stays.
+to be animated PNG that loop forever. Your animations are webp, so **Export for Signal** converts
+them - the desktop creator re-encodes still images itself, but uploads an animation exactly as you
+hand it over - and that is where the 300 KB limit starts to hurt: the frame rate is capped at 12 fps
+and, if the file is still too big, the picture shrinks before frames are dropped - a sticker that
+moves at 300 pixels beats a sharp one that doesn't. Flat, few-coloured animations survive this well,
+photographic ones turn into a slideshow. Playback speed always survives: a dropped frame gives its
+duration to the one that stays.
 
 ## iOS Support
 

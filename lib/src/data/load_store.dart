@@ -96,7 +96,7 @@ Future<File> exportPackAsSignal(StickerPack pack) async {
       data = bytes;
       contentType = sniffImageContentType(bytes) ?? signalMimeWebP;
     }
-    final name = "sticker-$i${_extensionForContentType(contentType)}";
+    final name = signalStickerFileName(i, _extensionForContentType(contentType));
     await File(_joinPath(packDir.path, name)).writeAsBytes(data);
     signalPack.stickers.add(
       SignalSticker(id: i, file: name, emoji: pack.stickers[i].emojis.join(), contentType: contentType),
@@ -105,6 +105,10 @@ Future<File> exportPackAsSignal(StickerPack pack) async {
 
   // Signal has no separate tray image, one of the stickers is used as the pack icon instead.
   await writeSignalManifest(packDir, signalPack);
+
+  // The upload happens on a computer, so the way there travels with the pictures and not with the
+  // screen this export was pressed on. Ignored by every tool that reads the pack, seen by the user.
+  await File(_joinPath(packDir.path, signalReadmeName)).writeAsString(signalZipReadme(signalPack));
 
   File zipFile = File("${exportDir.path}/${_sanitizeFileName(pack.title)}_signal.zip");
   await ZipFile.createFromDirectory(sourceDir: packDir, zipFile: zipFile);

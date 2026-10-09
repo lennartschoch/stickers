@@ -4,16 +4,20 @@ import 'dart:io';
 /// Everything about Signal's sticker pack format lives here.
 ///
 /// Unlike WhatsApp, Signal offers no way for a third party app to push a sticker pack into the
-/// messenger. Signal only installs packs that live on its own CDN, opened through
-/// `https://signal.art/addstickers/#pack_id=...&pack_key=...` links.
+/// messenger: Android and iOS install nothing but packs that live on Signal's own CDN, opened
+/// through a `https://signal.art/addstickers/#pack_id=...&pack_key=...` link. The only native
+/// upload tool is built into Signal Desktop, which takes loose images and offers them under
+/// *File ▸ Create/upload sticker pack*.
 ///
-/// What we *can* do is produce the exact layout Signal's own upload tooling consumes: a
-/// `manifest.json` next to the sticker images, zipped up. Feeding that zip to `signal-cli
-/// uploadStickerPack` (or any of the "add your pack to Signal" websites) uploads it and gives you
-/// an install link back. That zip is also what you receive when somebody sends you a pack.
+/// So an exported pack is aimed at that creator: pictures in the shapes it accepts, in file names
+/// that survive a file picker's sort order, together with a text file that explains the upload to
+/// whoever unzips it. The `manifest.json` written next to them is for the second, less friendly
+/// route - `signal-cli uploadStickerPack` and the websites built on it - and the same file is what
+/// this app reads back when a Signal pack is imported.
 ///
-/// The size/dimension limits are taken from the official sticker creator
-/// (`sticker-creator/src/constants.ts` in signalapp/Signal-Desktop).
+/// The size/dimension limits, and the formats the creator drops in, come from the creator itself:
+/// `sticker-creator/src/constants.ts`, `src/util/processImage.ts` and
+/// `src/util/useStickerDropzone.ts` in signalapp/Signal-Desktop.
 
 /// Stickers are rendered at 512x512 by Signal.
 const int signalStickerSize = 512;
@@ -29,6 +33,9 @@ const int signalMaxStickers = 200;
 
 /// Name of the json file describing a Signal sticker pack.
 const String signalManifestName = "manifest.json";
+
+/// Name of the plain text instructions written into an exported pack, next to the pictures.
+const String signalReadmeName = "ADD-TO-SIGNAL.txt";
 
 const String signalMimeWebP = "image/webp";
 const String signalMimePng = "image/png";
@@ -279,6 +286,103 @@ Future<File> writeSignalManifest(Directory dir, SignalPackManifest manifest) asy
   final file = File(_join(dir.path, signalManifestName));
   await file.writeAsString(jsonEncode(manifest.toJson()));
   return file;
+}
+
+/// Name of the [index]th image of an exported pack, e.g. `sticker-007.webp`.
+///
+/// Zero padded on purpose: Signal Desktop's creator keeps the stickers in the order the files are
+/// picked, and a picker that sorts `sticker-10` in front of `sticker-2` would shuffle the pack.
+String signalStickerFileName(int index, String extension) =>
+    "sticker-${index.toString().padLeft(3, "0")}$extension";
+
+/// Where Signal looks for sticker packs, and where its install links point.
+const String signalAddStickersUrl = "https://signal.art/addstickers";
+
+/// The link that opens an uploaded pack in Signal, on any of its apps.
+String signalInstallLink(String packId, String packKey) =>
+    "$signalAddStickersUrl/#pack_id=${packId.toLowerCase()}&pack_key=${packKey.toLowerCase()}";
+
+/// A pack that lives on Signal's CDN: its id and the key that decrypts it, both hex.
+class SignalPackRef {
+  const SignalPackRef(this.packId, this.packKey);
+
+  final String packId;
+  final String packKey;
+
+  String get installLink => signalInstallLink(packId, packKey);
+
+  @override
+  bool operator ==(Object other) => other is SignalPackRef && other.installLink == installLink;
+
+  @override
+  int get hashCode => installLink.hashCode;
+}
+
+final RegExp _signalPackIdPattern = RegExp(r"pack_id=([0-9a-fA-F]+)");
+final RegExp _signalPackKeyPattern = RegExp(r"pack_key=([0-9a-fA-F]+)");
+
+/// Reads a share link back into the pack it points at.
+///
+/// Understands both forms Signal uses - the share link
+/// `https://signal.art/addstickers/#pack_id=...&pack_key=...` and the action uri the same screen
+/// answers to, `sgnl://addstickers?pack_id=...&pack_key=...` - and returns `null` for anything that
+/// doesn't carry a full id and a full key, however the rest of it is written.
+SignalPackRef? parseSignalPackRef(String? value) {
+  if (value == null) return null;
+  final text = value.trim();
+  final id = _signalPackIdPattern.firstMatch(text)?.group(1);
+  final key = _signalPackKeyPattern.firstMatch(text)?.group(1);
+  // A Signal pack id is 16 bytes and its key 32, nothing else is worth calling a link.
+  if (id == null || key == null || id.length != 32 || key.length != 64) return null;
+  return SignalPackRef(id.toLowerCase(), key.toLowerCase());
+}
+
+/// The instructions that go into an exported pack as [signalReadmeName].
+///
+/// They are written into the zip instead of only being shown on screen because the upload happens
+/// on a computer, hours and one file transfer after the export, and the file lands next to the
+/// pictures it describes. English only for the same reason - it travels with the pack, not with the
+/// app's language.
+String signalZipReadme(SignalPackManifest manifest) {
+  final buffer = StringBuffer()
+    ..writeln("How to add these stickers to Signal")
+    ..writeln("===================================")
+    ..writeln()
+    ..writeln("Signal installs sticker packs from its own servers only, so these pictures have to be")
+    ..writeln("uploaded once. Signal Desktop does that without any command line tools:")
+    ..writeln()
+    ..writeln("1. Get this archive onto the computer that runs Signal Desktop - mail it to yourself,")
+    ..writeln("   plug the phone in, whatever you like - and unzip it.")
+    ..writeln("2. In Signal Desktop, open File and choose \"Create/upload sticker pack\".")
+    ..writeln("3. Drop every picture of this folder into the window, or add them with the plus tiles.")
+    ..writeln("   The order they are added in is the order of the pack.")
+    ..writeln("4. Give every sticker an emoji, then fill in the title and the author.")
+    ..writeln("5. Press Upload. Signal answers with an install link that looks like")
+    ..writeln("   $signalAddStickersUrl/#pack_id=...&pack_key=...")
+    ..writeln("6. Open that link on your phone, or send it to anybody you like: the pack installs.")
+    ..writeln()
+    ..writeln("This is \"${manifest.title}\" by ${manifest.author}, in the shape Signal wants:")
+    ..writeln("$signalStickerSize x $signalStickerSize pixels, no more than $signalMaxStickers stickers, no more")
+    ..writeln("than ${signalMaxStickerBytes ~/ 1024} KB per sticker, animations as animated png that loop forever.")
+    ..writeln("Signal checks every one of that again and says out loud when a sticker fails - if that")
+    ..writeln("happens, remove the sticker it named and upload the rest.")
+    ..writeln()
+    ..writeln("Note that the creator asks for the emojis again, it doesn't read them from the")
+    ..writeln("manifest. They are these, counted the way the stickers follow each other:")
+    ..writeln();
+
+  for (var position = 1; position <= manifest.stickers.length; position++) {
+    final sticker = manifest.stickers[position - 1];
+    buffer.writeln("  ${position.toString().padLeft(3)}. ${sticker.file}  ${sticker.emoji}");
+  }
+
+  buffer
+    ..writeln()
+    ..writeln("The manifest.json in this folder describes the same pack for tools that upload without")
+    ..writeln("Signal Desktop, such as \"signal-cli uploadStickerPack\". You don't need it for the")
+    ..writeln("steps above.");
+
+  return buffer.toString();
 }
 
 /// Reasons a pack can't be handed to Signal.

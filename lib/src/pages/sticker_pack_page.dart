@@ -11,6 +11,7 @@ import 'package:stickers/src/dialogs/delete_confirm_dialog.dart';
 import 'package:stickers/src/dialogs/edit_pack_dialog.dart';
 import 'package:stickers/src/dialogs/edit_sticker_dialog.dart';
 import 'package:stickers/src/dialogs/error_dialog.dart';
+import 'package:stickers/src/dialogs/signal_link_dialog.dart';
 import 'package:stickers/src/globals.dart';
 import 'package:stickers/src/pages/crop_page.dart';
 import 'package:stickers/src/pages/default_page.dart';
@@ -37,6 +38,12 @@ class StickerPackPageState extends State<StickerPackPage> {
           Expanded(
             child: DefaultSliverActivity(
               actions: [
+                if (widget.pack.signalLink != null)
+                  IconButton(
+                    tooltip: AppLocalizations.of(context)!.openInSignal,
+                    onPressed: () => openSignalPack(widget.pack),
+                    icon: const Icon(Icons.open_in_new),
+                  ),
                 IconButton(
                   tooltip: AppLocalizations.of(context)!.edit,
                   onPressed: () {
@@ -192,29 +199,48 @@ class StickerPackPageState extends State<StickerPackPage> {
   void _showExportOptions(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.folder_zip_outlined),
-              title: Text(AppLocalizations.of(sheetContext)!.exportOwnFormat),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                exportPack(widget.pack);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat_bubble_outline),
-              title: Text(AppLocalizations.of(sheetContext)!.exportForSignal),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                exportForSignalWithErrorHandling(widget.pack);
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext)!;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.folder_zip_outlined),
+                title: Text(l10n.exportOwnFormat),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  exportPack(widget.pack);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline),
+                title: Text(l10n.exportForSignal),
+                subtitle: Text(l10n.signalExportSubtitle),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  exportForSignalWithErrorHandling(widget.pack);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: Text(l10n.signalInstallLink),
+                subtitle: Text(
+                  widget.pack.signalLink ?? l10n.signalInstallLinkHint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  showDialog(context: context, builder: (context) => SignalLinkDialog(widget.pack))
+                      .then((_) => setState(() {}));
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

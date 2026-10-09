@@ -12,6 +12,7 @@ import 'package:stickers/src/data/sticker_pack.dart';
 import 'package:stickers/src/dialogs/error_dialog.dart';
 import 'package:stickers/src/dialogs/signal_info_dialog.dart';
 import 'package:stickers/src/globals.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:whatsapp_stickers_plus/exceptions.dart';
 
 bool isValidURL(String input) {
@@ -101,6 +102,25 @@ Future<void> exportForSignalWithErrorHandling(StickerPack pack) async {
       (context) => ErrorDialog(title: AppLocalizations.of(context)!.error, message: e.toString()),
     );
   }
+}
+
+/// Opens an uploaded pack in Signal - the one thing Signal lets another app do for a sticker pack:
+/// its `StickerPackPreviewActivityV2` answers to `signal.art/addstickers` links, and shows an "Add
+/// to Signal" button for the pack behind the link.
+Future<void> openSignalPack(StickerPack pack) async {
+  final link = pack.signalLink;
+  if (link == null) return;
+  var opened = false;
+  try {
+    opened = await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+  } on Exception catch (_) {
+    opened = false;
+  }
+  if (opened) return;
+  _showOverNavigator((context) => ErrorDialog(
+        title: AppLocalizations.of(context)!.error,
+        message: AppLocalizations.of(context)!.couldntOpenSignal,
+      ));
 }
 
 /// Shows [builder] over whatever page is on screen right now, the export we just waited for may
